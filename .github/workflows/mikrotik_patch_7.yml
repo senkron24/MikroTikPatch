@@ -34,21 +34,20 @@ permissions:
   contents: write
 
 env:
-  # --- ANAHTARLAR (Secrets'dan veya buraya yazabilirsin) ---
-  # GitHub Secrets kullaniyorsan bunlari elleme. 
-  # Eger Secrets eklemediysen, ${{ secrets... }} yerine tirnak icinde kodunu yaz.
-  CUSTOM_LICENSE_PRIVATE_KEY: ${{ secrets.CUSTOM_LICENSE_PRIVATE_KEY }}
-  CUSTOM_LICENSE_PUBLIC_KEY: ${{ secrets.CUSTOM_LICENSE_PUBLIC_KEY }}
-  CUSTOM_NPK_SIGN_PRIVATE_KEY: ${{ secrets.CUSTOM_NPK_SIGN_PRIVATE_KEY }}
-  CUSTOM_NPK_SIGN_PUBLIC_KEY: ${{ secrets.CUSTOM_NPK_SIGN_PUBLIC_KEY }}
+  # --- SENIN URETTIGIN ANAHTARLAR (TURN 14'TEN ALINDI) ---
+  # Bunlari direkt buraya yazdik ki hata vermesin
+  CUSTOM_LICENSE_PRIVATE_KEY: "56ebe3066bc9e00be8f8cf545b8b089da221002984a78d5eb7f50d147029b019"
+  CUSTOM_LICENSE_PUBLIC_KEY: "e634eb57e84ca11114cc9ac441c0641c5290edbf372de8e923e1cc3d76787892b57d6cec08248dfe76e5ed4a645fb0793907bdda7902fe0b645ee81ede7a1492"
+  CUSTOM_NPK_SIGN_PRIVATE_KEY: "93e2a6f0734affb26040fbfd67cecc97d16bd1b577433ac41a86fbba351cabbe"
+  CUSTOM_NPK_SIGN_PUBLIC_KEY: "ab94ce122b2a9395bcbcc408c8c422aeadb736ee2e048fc632fb97d0414f3bdf3d5f2b521cad8b61d99792c1111bacc317ce70325a41abe0707658e551f67fb4"
   
-  # --- SABIT ANAHTARLAR ---
+  # --- MIKROTIK ORIJINAL ANAHTARLARI ---
   MIKRO_LICENSE_PUBLIC_KEY: "9756c669c56a8d672722b918efeb1871c867207038676a5940562e2474415858"
   MIKRO_NPK_SIGN_PUBLIC_KEY: "520d7756770f5e132918805721d0176840608518451120035048566113111867"
   CUSTOM_CLOUD_PUBLIC_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
   MIKRO_CLOUD_PUBLIC_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
   
-  # --- SABIT URL'LER (DUZELTILDI) ---
+  # --- URL AYARLARI ---
   MIKRO_LICENCE_URL: licence.mikrotik.com
   CUSTOM_LICENCE_URL: licence.mikrotik.com
   MIKRO_UPGRADE_URL: upgrade.mikrotik.com
@@ -71,7 +70,7 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             BUILD_TIME="${{ github.event.inputs.buildtime }}"
-            RELEASE="false" # Artifact olarak indirecegimiz icin Release kapali
+            RELEASE="false"
             if [ -z "$BUILD_TIME" ]; then
               BUILD_TIME=$(date +'%s')
             fi
@@ -132,8 +131,6 @@ jobs:
         echo "LATEST_VERSION=${LATEST_VERSION}" >> $GITHUB_ENV
         sudo apt-get update > /dev/null
 
-    # "Get loader patch files" adimi SILINDI (Cunku dosya yok ve hata veriyor)
-
     - name: Create Squashfs for option and python3
       if: steps.get_latest.outputs.has_new_version == 'true'
       run: |
@@ -152,7 +149,6 @@ jobs:
         done
         sudo mksquashfs option-root option.sfs -quiet -comp xz -no-xattrs -b 256k
         sudo rm -rf option-root
-        # Python indir ve paketle
         if [ "${{ matrix.arch }}" == "x86" ]; then
           sudo wget -O cpython.tar.gz -nv https://github.com/indygreg/python-build-standalone/releases/download/20250708/cpython-3.11.13+20250708-x86_64-unknown-linux-musl-install_only_stripped.tar.gz
         elif [ "${{ matrix.arch }}" == "arm64" ]; then
@@ -181,8 +177,6 @@ jobs:
         sudo unzip netinstall.zip
         sudo -E python3 patch.py netinstall netinstall.exe
         sudo mv netinstall.exe netinstall-$LATEST_VERSION.exe
-
-    # GEREKSIZ VE HATALI ADIMLAR SILINDI (Upload, SSH, Release vb.)
 
     - name: Upload Files as Artifact
       if: steps.get_latest.outputs.has_new_version == 'true'
